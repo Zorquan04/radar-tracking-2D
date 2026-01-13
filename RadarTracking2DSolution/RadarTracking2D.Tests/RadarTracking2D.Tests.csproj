@@ -21,8 +21,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="AppTests\" />
-      <Folder Include="CoreTests\" />
+      <ProjectReference Include="..\RadarTracking2D.Core\RadarTracking2D.Core.csproj" />
     </ItemGroup>
 
 </Project>

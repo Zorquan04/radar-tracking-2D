@@ -1,6 +1,6 @@
 ﻿namespace RadarTracking2D.Core.Data;
 
-public class Blob
+public class TrackState
 {
     
 }
