@@ -12,37 +12,26 @@ static class Program
     {
         var generator = new RadarFrameGenerator();
         var thresholding = new ThresholdingService();
-
-        var frame = generator.Generate(width: 100, height: 100, objectCount: 2);
-
-        int threshold = thresholding.CalculateThreshold(frame);
-
-        var binary = thresholding.ApplyThreshold(frame, threshold);
-
-        Console.WriteLine($"Otsu threshold = {threshold}");
-        
-        for (int y = 0; y < frame.Height; y++)
-        {
-            for (int x = 0; x < frame.Width; x++)
-            {
-                Console.Write(binary[y, x] ? "#" : ".");
-            }
-            Console.WriteLine();
-        }
-        
         var extractor = new BlobExtractor();
-        var blobs = extractor.Extract(binary);
-
-        Console.WriteLine($"Blobs detected: {blobs.Count}");
-        
         var tracker = new Tracker();
-        var blobStats = blobs.Select(b => new BlobStatistics(b)).ToList();
 
-        foreach (var stats in blobStats)
+        int frameCount = 5;
+
+        for (int f = 0; f < frameCount; f++)
         {
-            Console.WriteLine($"Blob {stats.BlobLabel}: pixels={stats.PixelCount}, meanX={stats.MeanX:F1}, meanY={stats.MeanY:F1}, stdX={stats.StdDevX:F1}, stdY={stats.StdDevY:F1}");
-        }
+            var frame = generator.Generate(100, 100, objectCount: 2);
+            int threshold = thresholding.CalculateThreshold(frame);
+            var binary = thresholding.ApplyThreshold(frame, threshold);
+            var blobs = extractor.Extract(binary);
+            var blobStats = blobs.Select(b => new BlobStatistics(b)).ToList();
 
-        tracker.ProcessFrame(blobStats);
+            tracker.ProcessFrame(blobStats);
+
+            Console.WriteLine($"Frame {f + 1}");
+            foreach (var t in tracker.GetTracks())
+            {
+                Console.WriteLine($"Track {t.Id}: meanX={t.Distribution.MeanX:F1}, meanY={t.Distribution.MeanY:F1}");
+            }
+        }
     }
 }
