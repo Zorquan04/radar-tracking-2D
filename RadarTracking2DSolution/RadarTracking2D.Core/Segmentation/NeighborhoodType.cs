@@ -1,6 +1,7 @@
 ﻿namespace RadarTracking2D.Core.Segmentation;
 
-public class NeighborhoodType
+public enum NeighborhoodType
 {
-    
+    Four,
+    Eight
 }
