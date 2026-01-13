@@ -1,6 +1,6 @@
-﻿<Window x:Class="RadarTracking2D.WPF.MainWindow"
+﻿<Window x:Class="RadarTracking2D.WPF.Views.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Radar Tracking" Height="500" Width="500">
+        Title="Radar 2D" Width="600" Height="600">
     <Canvas Name="RadarCanvas" Background="Black"/>
 </Window>

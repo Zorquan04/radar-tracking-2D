@@ -2,9 +2,7 @@
 
 public class Hypothesis
 {
-    public Dictionary<int, int?> Assignments { get; } = new(); 
-    
-    // key: measurement index, value: trackId or null if disruption
+    public Dictionary<int, int?> Assignments { get; } = new(); // key: measurement index, value: trackId or null
     public double Probability { get; set; } = 1.0;
 
     public Hypothesis Clone()

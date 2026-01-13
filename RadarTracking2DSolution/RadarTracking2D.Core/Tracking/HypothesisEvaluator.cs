@@ -20,8 +20,19 @@ public class HypothesisEvaluator
                 continue;
             }
 
+            if (measurementIndex < 0 || measurementIndex >= measurements.Count)
+            {
+                probability *= 0.01; // no measurement
+                continue;
+            }
+
             var measurement = measurements[measurementIndex];
             var track = tracks.Find(t => t.Id == trackId.Value);
+            if (track == null)
+            {
+                probability *= 0.01; // track does not exist
+                continue;
+            }
 
             double px = measurement.MeanX;
             double py = measurement.MeanY;

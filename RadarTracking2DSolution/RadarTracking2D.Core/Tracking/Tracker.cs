@@ -5,52 +5,67 @@ namespace RadarTracking2D.Core.Tracking;
 public class Tracker
 {
     private List<Track> _tracks = new();
-    private List<Hypothesis> _activeHypotheses = new();
+    private readonly MhTree _tree = new();
     private int _nextTrackId = 1;
-    private readonly HypothesisEvaluator _evaluator = new();
 
-    public Tracker()
-    {
-        _activeHypotheses.Add(new Hypothesis()); // root hypothesis
-    }
+    public Tracker() { }
 
     public void ProcessFrame(List<BlobStatistics> measurements)
     {
-        var newHypotheses = new List<Hypothesis>();
+        if (measurements.Count == 0) return;
 
-        foreach (var hyp in _activeHypotheses)
+        // we develop a tree of hypotheses
+        _tree.Expand(measurements, _tracks, ref _nextTrackId);
+
+        // we collect the most probable leaves
+        var leaves = _tree.Root.GetLeaves().OrderByDescending(l => l.Probability).Take(10).ToList(); // we limit the top 10 hypotheses
+
+        var updatedTracks = new Dictionary<int, Track>();
+
+        foreach (var leaf in leaves)
         {
-            // simple logic: each assignment measurement -> track or disturbance
-            for (int i = 0; i < measurements.Count; i++)
+            foreach (var kv in leaf.Hypothesis.Assignments)
             {
-                // 1. assign to existing track
-                foreach (var track in _tracks)
+                int mIndex = kv.Key;
+                int? trackId = kv.Value;
+
+                // skip assignments that are out of bounds for this frame
+                if (mIndex < 0 || mIndex >= measurements.Count)
+                    continue;
+
+                if (trackId == null) 
+                    continue; // measurement as a disturbance
+
+                var meas = measurements[mIndex];
+
+                if (updatedTracks.ContainsKey(trackId.Value))
                 {
-                    var newHyp = hyp.Clone();
-                    newHyp.Assignments[i] = track.Id;
-                    newHyp.Probability = _evaluator.Evaluate(newHyp, measurements, _tracks);
-                    newHypotheses.Add(newHyp);
+                    // already updated
+                    var existing = updatedTracks[trackId.Value];
+                    existing.Distribution = new GaussianDistribution(meas.MeanX, meas.MeanY, meas.StdDevX, meas.StdDevY);
                 }
+                else
+                {
+                    var existingGlobal = _tracks.FirstOrDefault(t => t.Id == trackId.Value);
+                    if (existingGlobal != null)
+                    {
+                        existingGlobal.Distribution = new GaussianDistribution(meas.MeanX, meas.MeanY, meas.StdDevX, meas.StdDevY);
+                        updatedTracks[trackId.Value] = existingGlobal;
+                    }
+                    else
+                    {
+                        var newTrack = new Track(trackId.Value, new GaussianDistribution(meas.MeanX, meas.MeanY, meas.StdDevX, meas.StdDevY));
+                        updatedTracks[trackId.Value] = newTrack;
 
-                // 2. assign as disruption
-                var noiseHyp = hyp.Clone();
-                noiseHyp.Assignments[i] = null;
-                noiseHyp.Probability = _evaluator.Evaluate(noiseHyp, measurements, _tracks);
-                newHypotheses.Add(noiseHyp);
-
-                // 3. create a new track
-                var newTrackHyp = hyp.Clone();
-                int newId = _nextTrackId++;
-                var dist = new GaussianDistribution(measurements[i].MeanX, measurements[i].MeanY, measurements[i].StdDevX, measurements[i].StdDevY);
-                _tracks.Add(new Track(newId, dist));
-                newTrackHyp.Assignments[i] = newId;
-                newTrackHyp.Probability = _evaluator.Evaluate(newTrackHyp, measurements, _tracks);
-                newHypotheses.Add(newTrackHyp);
+                        if (trackId.Value >= _nextTrackId)
+                            _nextTrackId = trackId.Value + 1;
+                    }
+                }
             }
         }
 
-        // selection of the most probable hypotheses
-        _activeHypotheses = newHypotheses.OrderByDescending(h => h.Probability).Take(10).ToList(); // top 10 so it doesn't explode
+        // track list synchronization
+        _tracks = updatedTracks.Values.ToList();
     }
 
     public List<Track> GetTracks() => _tracks;
