@@ -2,6 +2,7 @@
 using RadarTracking2D.Core.ImageProcessing;
 using RadarTracking2D.Core.Segmentation;
 using RadarTracking2D.Core.Statistics;
+using RadarTracking2D.Core.Tracking;
 
 namespace RadarTracking2D.App;
 
@@ -28,18 +29,20 @@ static class Program
             }
             Console.WriteLine();
         }
-
-        Console.ReadKey();
         
         var extractor = new BlobExtractor();
         var blobs = extractor.Extract(binary);
 
         Console.WriteLine($"Blobs detected: {blobs.Count}");
+        
+        var tracker = new Tracker();
+        var blobStats = blobs.Select(b => new BlobStatistics(b)).ToList();
 
-        foreach (var blob in blobs)
+        foreach (var stats in blobStats)
         {
-            var stats = new BlobStatistics(blob);
-            Console.WriteLine($"Blob {stats.BlobLabel}: pixels={stats.PixelCount}, " + $"meanX={stats.MeanX:F1}, meanY={stats.MeanY:F1}, " + $"stdX={stats.StdDevX:F1}, stdY={stats.StdDevY:F1}");
+            Console.WriteLine($"Blob {stats.BlobLabel}: pixels={stats.PixelCount}, meanX={stats.MeanX:F1}, meanY={stats.MeanY:F1}, stdX={stats.StdDevX:F1}, stdY={stats.StdDevY:F1}");
         }
+
+        tracker.ProcessFrame(blobStats);
     }
 }
