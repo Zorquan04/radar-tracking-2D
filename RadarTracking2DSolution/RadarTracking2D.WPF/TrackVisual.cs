@@ -1,5 +1,4 @@
-﻿using RadarTracking2D.Core.Tracking;
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Media;
 
 namespace RadarTracking2D.WPF.Models;
@@ -15,11 +14,13 @@ public class TrackVisual
     private readonly List<Point> _rawHistory = new();
     public List<Point> History { get; } = new();
 
+    private readonly Track _coreTrack;
     private static readonly Random _rand = new();
     private static readonly Dictionary<int, Color> _idToColor = new();
 
     public TrackVisual(Track core)
     {
+        _coreTrack = core; // we store core Track
         Id = core.Id;
 
         if (!_idToColor.TryGetValue(Id, out Color color))
@@ -29,18 +30,18 @@ public class TrackVisual
         }
         Color = color;
 
-        AddPosition(core);
+        AddPosition(); // core Track Story
     }
 
-    public void Update(Track core) => AddPosition(core);
-
-    private void AddPosition(Track core)
+    public void AddPosition()
     {
-        var rawPoint = new Point(core.Distribution.MeanX, core.Distribution.MeanY);
-        _rawHistory.Add(rawPoint);
+        var newPoint = new Point(_coreTrack.Distribution.MeanX, _coreTrack.Distribution.MeanY);
 
-        StdDevX = core.Distribution.StdDevX;
-        StdDevY = core.Distribution.StdDevY;
+        if (_rawHistory.Count == 0 || _rawHistory[^1] != newPoint)
+            _rawHistory.Add(newPoint);
+
+        StdDevX = _coreTrack.Distribution.StdDevX;
+        StdDevY = _coreTrack.Distribution.StdDevY;
 
         UpdateScaledHistory(1, 1);
     }
@@ -53,8 +54,10 @@ public class TrackVisual
 
         if (_rawHistory.Count > 0)
         {
-            var last = _rawHistory[_rawHistory.Count - 1];
+            var last = _rawHistory[^1];
             Position = new Point(last.X * scaleX, last.Y * scaleY);
         }
     }
+
+    public Track GetCoreTrack() => _coreTrack;
 }

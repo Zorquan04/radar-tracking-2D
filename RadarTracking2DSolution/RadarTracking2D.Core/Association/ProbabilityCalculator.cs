@@ -15,17 +15,29 @@ public static class ProbabilityCalculator
 
             if (trackId == null)
             {
-                probability *= 0.1; // penalization of the missing track
+                probability *= 0.1; // disturbance
+                continue;
+            }
+
+            if (measurementIndex < 0 || measurementIndex >= measurements.Count)
+            {
+                probability *= 0.01;
                 continue;
             }
 
             var measurement = measurements[measurementIndex];
-            var track = tracks.Find(t => t.Id == trackId.Value);
+            var track = tracks.FirstOrDefault(t => t.Id == trackId.Value);
+
+            if (track == null)
+            {
+                probability *= 0.01; // invalid / vanished track
+                continue;
+            }
 
             double px = measurement.MeanX;
             double py = measurement.MeanY;
 
-            probability *= track!.Distribution.Probability(px, py);
+            probability *= track.Distribution.Probability(px, py);
         }
 
         return probability;

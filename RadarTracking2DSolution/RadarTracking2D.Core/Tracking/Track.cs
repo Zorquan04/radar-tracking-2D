@@ -1,30 +1,35 @@
 ﻿using RadarTracking2D.Core.Statistics;
+using RadarTracking2D.Core.Tracking;
+using System.Drawing;
 
-namespace RadarTracking2D.Core.Tracking;
-
-public class Track(int id, GaussianDistribution distribution)
+public class Track
 {
-    public int Id { get; } = id;
-    public GaussianDistribution Distribution { get; set; } = distribution;
+    public int Id { get; }
+    public GaussianDistribution Distribution { get; set; }
+    public Point? PreviousPosition { get; private set; }
     public int Age { get; private set; } = 0;
+    public MotionModel Motion { get; } = new MotionModel();
+
+    public Track(int id, GaussianDistribution distribution)
+    {
+        Id = id;
+        Distribution = distribution;
+    }
 
     public void Update(GaussianDistribution newDistribution)
     {
+        if (Distribution != null)
+        {
+            PreviousPosition = new Point((int)Distribution.MeanX, (int)Distribution.MeanY);
+            Motion.Update(newDistribution.MeanX, newDistribution.MeanY, Distribution.MeanX, Distribution.MeanY);
+        }
+
         Distribution = newDistribution;
         Age++;
     }
 
-    public Track Clone()
-    {
-        var newDistribution = new GaussianDistribution(Distribution.MeanX, Distribution.MeanY, Distribution.StdDevX, Distribution.StdDevY);
-
-        return new Track(Id, newDistribution);
-    }
-
-    // Track position prediction
     public (double PredX, double PredY) Predict()
     {
-        // simple prediction – if you don't have speed, we return the current average
-        return (Distribution.MeanX, Distribution.MeanY);
+        return Motion.Predict(Distribution.MeanX, Distribution.MeanY);
     }
 }

@@ -2,8 +2,8 @@
 using RadarTracking2D.Core.Generation;
 using RadarTracking2D.Core.ImageProcessing;
 using RadarTracking2D.Core.Segmentation;
-using RadarTracking2D.Core.Statistics;
 using RadarTracking2D.Core.Tracking;
+using RadarTracking2D.WPF.Models;
 using RadarTracking2D.WPF.ViewModels;
 using System.Windows;
 using System.Windows.Controls;
@@ -47,32 +47,39 @@ public partial class MainWindow : Window
             return;
         }
 
-        var frame = _frames[_currentFrame];
-
-        int threshold = _thresholding.CalculateThreshold(frame);
-        bool[,] binary = _thresholding.ApplyThreshold(frame, threshold);
-
-        var blobs = _extractor.Extract(binary);
-        var blobStats = blobs.Select(b => new BlobStatistics(b)).ToList();
-
-        _tracker.ProcessFrame(blobStats);
-
-        DrawTracks(_tracker.GetTracks());
-
+        ProcessRadarFrame(_frames[_currentFrame]);
         _currentFrame++;
     }
 
-    public void DrawTracks(IEnumerable<Track> tracks)
+    private void ProcessRadarFrame(RadarFrame frame)
+    {
+        // 1. Thresholding
+        int threshold = _thresholding.CalculateThreshold(frame);
+        bool[,] binary = _thresholding.ApplyThreshold(frame, threshold);
+
+        // 2. Blob extraction
+        var blobs = _extractor.Extract(binary);
+
+        // 3. Tracking
+        _tracker.ProcessFrame(blobs);
+
+        // 4. Update ViewModel
+        _viewModel.UpdateTracks(_tracker.GetTracks());
+
+        // 5. Draw on canvas
+        DrawTracks(_viewModel.Tracks);
+    }
+
+    public void DrawTracks(IEnumerable<TrackVisual> tracks)
     {
         RadarCanvas.Children.Clear();
-
-        _viewModel.UpdateTracks(tracks);
 
         double scaleX = RadarCanvas.ActualWidth / 100.0;
         double scaleY = RadarCanvas.ActualHeight / 100.0;
 
-        foreach (var t in _viewModel.Tracks)
+        foreach (var t in tracks)
         {
+            t.AddPosition();
             t.UpdateScaledHistory(scaleX, scaleY);
 
             // Gaussian ellipse
@@ -86,7 +93,7 @@ public partial class MainWindow : Window
             Canvas.SetTop(ellipse, t.Position.Y - ellipse.Height / 2);
             RadarCanvas.Children.Add(ellipse);
 
-            // track point
+            // Tracking point
             var dot = new Ellipse
             {
                 Width = 6,
@@ -97,7 +104,7 @@ public partial class MainWindow : Window
             Canvas.SetTop(dot, t.Position.Y - 3);
             RadarCanvas.Children.Add(dot);
 
-            // history lines
+            // History lines
             for (int i = 1; i < t.History.Count; i++)
             {
                 var line = new Line
@@ -111,6 +118,20 @@ public partial class MainWindow : Window
                 };
                 RadarCanvas.Children.Add(line);
             }
+
+            // Motion prediction
+            var pred = t.GetCoreTrack().Predict();
+            var predLine = new Line
+            {
+                X1 = t.Position.X,
+                Y1 = t.Position.Y,
+                X2 = pred.PredX * scaleX,
+                Y2 = pred.PredY * scaleY,
+                Stroke = new SolidColorBrush(t.Color) { Opacity = 0.3 },
+                StrokeThickness = 1,
+                StrokeDashArray = new DoubleCollection { 4, 2 }
+            };
+            RadarCanvas.Children.Add(predLine);
         }
     }
 }

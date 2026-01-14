@@ -15,55 +15,55 @@ public class MhTree
         {
             foreach (var mIndex in Enumerable.Range(0, measurements.Count))
             {
-                // if there are no tracks (first frame), create a new track immediately
-                if (tracks.Count == 0)
-                {
-                    int newId = nextTrackId++;
-                    var newHyp = leaf.Hypothesis.Clone();
-                    newHyp.Assignments[mIndex] = newId;
+                var measurement = measurements[mIndex];
 
-                    var child = new MhTreeNode(newHyp)
-                    {
-                        Probability = 1.0 // temporarily
-                    };
-                    leaf.AddChild(child);
+                // no tracks -> we are creating a new one
+                if (!tracks.Any())
+                {
+                    var hyp = leaf.Hypothesis.Clone();
+                    hyp.Assignments[mIndex] = nextTrackId++;
+
+                    leaf.AddChild(new MhTreeNode(hyp) { Probability = 1.0 });
                     continue;
                 }
 
                 // assignment to existing tracks
-                foreach (var t in tracks)
+                foreach (var track in tracks)
                 {
-                    var newHyp = leaf.Hypothesis.Clone();
-                    newHyp.Assignments[mIndex] = t.Id;
+                    var hyp = leaf.Hypothesis.Clone();
+                    hyp.Assignments[mIndex] = track.Id;
 
-                    var child = new MhTreeNode(newHyp)
-                    {
-                        Probability = ProbabilityCalculator.Evaluate(newHyp, measurements, tracks)
-                    };
-                    leaf.AddChild(child);
+                    double prob = ProbabilityCalculator.Evaluate(hyp, measurements, tracks);
+
+                    leaf.AddChild(new MhTreeNode(hyp) { Probability = prob });
                 }
 
-                // measurement as a disturbance
-                var unassignedHyp = leaf.Hypothesis.Clone();
-                unassignedHyp.Assignments[mIndex] = null;
-
-                var unassignedChild = new MhTreeNode(unassignedHyp)
+                // unassigned measurement (noise)
+                var unassigned = leaf.Hypothesis.Clone();
+                unassigned.Assignments[mIndex] = null;
+                leaf.AddChild(new MhTreeNode(unassigned)
                 {
-                    Probability = ProbabilityCalculator.Evaluate(unassignedHyp, measurements, tracks)
-                };
-                leaf.AddChild(unassignedChild);
+                    Probability = ProbabilityCalculator.Evaluate(unassigned, measurements, tracks)
+                });
 
-                // new track for measurement
-                int newTrackId = nextTrackId++;
+                // new track
                 var newTrackHyp = leaf.Hypothesis.Clone();
-                newTrackHyp.Assignments[mIndex] = newTrackId;
-
-                var newChild = new MhTreeNode(newTrackHyp)
+                newTrackHyp.Assignments[mIndex] = nextTrackId++;
+                leaf.AddChild(new MhTreeNode(newTrackHyp)
                 {
-                    Probability = ProbabilityCalculator.Evaluate(newTrackHyp, measurements, tracks)
-                };
-                leaf.AddChild(newChild);
+                    Probability = 0.05 // low priority
+                });
             }
         }
+    }
+
+    public void Prune(int maxLeaves)
+    {
+        var bestLeaves = Root.GetLeaves().OrderByDescending(l => l.Probability).Take(maxLeaves).ToList();
+
+        Root.Children.Clear();
+
+        foreach (var leaf in bestLeaves)
+            Root.AddChild(leaf);
     }
 }

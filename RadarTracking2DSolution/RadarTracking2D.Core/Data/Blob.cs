@@ -1,9 +1,12 @@
 ﻿namespace RadarTracking2D.Core.Data;
 
-public class Blob(int label)
+public class Blob
 {
-    public int Label { get; } = label;
+    public int Id { get; }
     public List<(int X, int Y)> Pixels { get; } = new();
 
-    public int PixelCount => Pixels.Count;
+    public Blob(int id)
+    {
+        Id = id;
+    }
 }

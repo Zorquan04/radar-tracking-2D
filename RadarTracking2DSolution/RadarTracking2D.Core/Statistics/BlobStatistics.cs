@@ -4,8 +4,6 @@ namespace RadarTracking2D.Core.Statistics;
 
 public class BlobStatistics
 {
-    public int BlobLabel { get; }
-    public int PixelCount { get; }
     public double MeanX { get; }
     public double MeanY { get; }
     public double StdDevX { get; }
@@ -13,13 +11,20 @@ public class BlobStatistics
 
     public BlobStatistics(Blob blob)
     {
-        BlobLabel = blob.Label;
-        PixelCount = blob.PixelCount;
+        int n = blob.Pixels.Count;
+        if (n == 0)
+        {
+            MeanX = 0;
+            MeanY = 0;
+            StdDevX = 0;
+            StdDevY = 0;
+            return;
+        }
 
         MeanX = blob.Pixels.Average(p => p.X);
         MeanY = blob.Pixels.Average(p => p.Y);
 
-        StdDevX = Math.Sqrt(blob.Pixels.Average(p => Math.Pow(p.X - MeanX, 2)));
-        StdDevY = Math.Sqrt(blob.Pixels.Average(p => Math.Pow(p.Y - MeanY, 2)));
+        StdDevX = Math.Sqrt(blob.Pixels.Average(p => (p.X - MeanX) * (p.X - MeanX)));
+        StdDevY = Math.Sqrt(blob.Pixels.Average(p => (p.Y - MeanY) * (p.Y - MeanY)));
     }
 }

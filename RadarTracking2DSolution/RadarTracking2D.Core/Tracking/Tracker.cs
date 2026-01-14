@@ -4,23 +4,20 @@ namespace RadarTracking2D.Core.Tracking;
 
 public class Tracker
 {
-    private List<Track> _tracks = new();
-    private readonly MhTree _tree = new();
+    private readonly Dictionary<int, Track> _tracks = new();
+    private readonly MhTree _tree = new MhTree();
     private int _nextTrackId = 1;
-
-    public Tracker() { }
 
     public void ProcessFrame(List<BlobStatistics> measurements)
     {
-        if (measurements.Count == 0) return;
+        if (!measurements.Any()) return;
 
-        // we develop a tree of hypotheses
-        _tree.Expand(measurements, _tracks, ref _nextTrackId);
+        _tree.Expand(measurements, _tracks.Values.ToList(), ref _nextTrackId);
 
-        // we collect the most probable leaves
-        var leaves = _tree.Root.GetLeaves().OrderByDescending(l => l.Probability).Take(10).ToList(); // we limit the top 10 hypotheses
+        _tree.Prune(8);
 
-        var updatedTracks = new Dictionary<int, Track>();
+        // we take the best leaves
+        var leaves = _tree.Root.GetLeaves().OrderByDescending(l => l.Probability).Take(5).ToList();
 
         foreach (var leaf in leaves)
         {
@@ -29,44 +26,24 @@ public class Tracker
                 int mIndex = kv.Key;
                 int? trackId = kv.Value;
 
-                // skip assignments that are out of bounds for this frame
-                if (mIndex < 0 || mIndex >= measurements.Count)
+                if (trackId == null || mIndex < 0 || mIndex >= measurements.Count)
                     continue;
-
-                if (trackId == null) 
-                    continue; // measurement as a disturbance
 
                 var meas = measurements[mIndex];
 
-                if (updatedTracks.ContainsKey(trackId.Value))
+                if (!_tracks.TryGetValue(trackId.Value, out var track))
                 {
-                    // already updated
-                    var existing = updatedTracks[trackId.Value];
-                    existing.Distribution = new GaussianDistribution(meas.MeanX, meas.MeanY, meas.StdDevX, meas.StdDevY);
+                    track = new Track(trackId.Value,
+                        new GaussianDistribution(meas.MeanX, meas.MeanY, meas.StdDevX, meas.StdDevY));
+                    _tracks[trackId.Value] = track;
                 }
                 else
                 {
-                    var existingGlobal = _tracks.FirstOrDefault(t => t.Id == trackId.Value);
-                    if (existingGlobal != null)
-                    {
-                        existingGlobal.Distribution = new GaussianDistribution(meas.MeanX, meas.MeanY, meas.StdDevX, meas.StdDevY);
-                        updatedTracks[trackId.Value] = existingGlobal;
-                    }
-                    else
-                    {
-                        var newTrack = new Track(trackId.Value, new GaussianDistribution(meas.MeanX, meas.MeanY, meas.StdDevX, meas.StdDevY));
-                        updatedTracks[trackId.Value] = newTrack;
-
-                        if (trackId.Value >= _nextTrackId)
-                            _nextTrackId = trackId.Value + 1;
-                    }
+                    track.Update(new GaussianDistribution(meas.MeanX, meas.MeanY, meas.StdDevX, meas.StdDevY));
                 }
             }
         }
-
-        // track list synchronization
-        _tracks = updatedTracks.Values.ToList();
     }
 
-    public List<Track> GetTracks() => _tracks;
+    public List<Track> GetTracks() => _tracks.Values.ToList();
 }

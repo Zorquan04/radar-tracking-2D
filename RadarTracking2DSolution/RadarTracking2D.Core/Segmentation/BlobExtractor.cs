@@ -1,4 +1,4 @@
-﻿using RadarTracking2D.Core.Data;
+﻿using RadarTracking2D.Core.Statistics;
 
 namespace RadarTracking2D.Core.Segmentation;
 
@@ -6,11 +6,9 @@ public class BlobExtractor
 {
     private readonly ConnectedComponentLabeling _ccl = new();
 
-    public List<Blob> Extract(bool[,] binaryImage, NeighborhoodType neighborhood = NeighborhoodType.Four, int minPixelCount = 5)
+    public List<BlobStatistics> Extract(bool[,] binary)
     {
-        var blobs = _ccl.Process(binaryImage, neighborhood);
-
-        // filtration of small debris (noise)
-        return blobs.Where(b => b.PixelCount >= minPixelCount).ToList();
+        var blobs = _ccl.Process(binary);
+        return blobs.Select(b => new BlobStatistics(b)).ToList();
     }
 }

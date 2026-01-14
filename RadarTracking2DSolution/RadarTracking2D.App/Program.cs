@@ -13,3 +13,7 @@ static class Program
         app.Run(window);  // this is where the UI and timer in MainWindow are started
     }
 }
+
+// more comments
+// tests
+// improvements in visuals

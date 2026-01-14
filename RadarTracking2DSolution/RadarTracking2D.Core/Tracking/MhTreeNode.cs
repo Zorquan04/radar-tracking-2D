@@ -1,13 +1,12 @@
-﻿namespace RadarTracking2D.Core.Tracking;
+﻿using RadarTracking2D.Core.Tracking.Association;
 
-public class MhTreeNode(Hypothesis hypothesis)
+namespace RadarTracking2D.Core.Tracking;
+
+public class MhTreeNode : AssociationNode
 {
-    public Hypothesis Hypothesis { get; } = hypothesis;
-    public double Probability { get; set; } = 1.0;
-    public List<MhTreeNode> Children { get; } = new();
+    public MhTreeNode(Hypothesis hypothesis) : base(hypothesis) { }
 
-    public void AddChild(MhTreeNode child) => Children.Add(child);
-
+    // we add a convenient recursive method to the leaves
     public IEnumerable<MhTreeNode> GetLeaves()
     {
         if (Children.Count == 0)
@@ -16,9 +15,16 @@ public class MhTreeNode(Hypothesis hypothesis)
         {
             foreach (var child in Children)
             {
-                foreach (var leaf in child.GetLeaves())
-                    yield return leaf;
+                // we project children onto MhTreeNode – all children in MhTree are of this type
+                if (child is MhTreeNode mhChild)
+                {
+                    foreach (var leaf in mhChild.GetLeaves())
+                        yield return leaf;
+                }
             }
         }
     }
+
+    // we add a convenient child addition by casting to MhTreeNode
+    public void AddChild(MhTreeNode child) => base.AddChild(child);
 }
