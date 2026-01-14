@@ -1,5 +1,6 @@
 ﻿namespace RadarTracking2D.Core.Tracking;
 
+// single assignment hypothesis: which measurement goes to which track (or null)
 public class Hypothesis
 {
     public Dictionary<int, int?> Assignments { get; } = new(); // key: measurement index, value: trackId or null

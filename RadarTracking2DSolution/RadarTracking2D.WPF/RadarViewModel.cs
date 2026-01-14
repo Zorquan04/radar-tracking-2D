@@ -4,24 +4,25 @@ using RadarTracking2D.WPF.Models;
 
 namespace RadarTracking2D.WPF.ViewModels;
 
+// ViewModel stores visual tracks for WPF binding
 public class RadarViewModel : INotifyPropertyChanged
 {
     public ObservableCollection<TrackVisual> Tracks { get; } = new();
 
+    // sync core Tracks with visuals
     public void UpdateTracks(IEnumerable<Track> coreTracks)
     {
         foreach (var core in coreTracks)
         {
-            // we are looking for track visualization
             var visual = Tracks.FirstOrDefault(t => t.Id == core.Id);
 
             if (visual == null)
-            {     
-                Tracks.Add(new TrackVisual(core)); // if it doesn't exist, we add a new one and keep its initial position
+            {
+                Tracks.Add(new TrackVisual(core)); // add new visual if it doesn't exist
             }
             else
             {
-                visual.AddPosition(); // if it exists, we add a new item to the history without deleting the previous ones
+                visual.AddPosition(); // append new position to history
             }
         }
 

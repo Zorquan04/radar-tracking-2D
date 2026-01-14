@@ -8,7 +8,7 @@ public class BlobExtractor
 
     public List<BlobStatistics> Extract(bool[,] binary)
     {
-        var blobs = _ccl.Process(binary);
-        return blobs.Select(b => new BlobStatistics(b)).ToList();
+        var blobs = _ccl.Process(binary); // find all connected components
+        return blobs.Select(b => new BlobStatistics(b)).ToList(); // convert to statistics
     }
 }

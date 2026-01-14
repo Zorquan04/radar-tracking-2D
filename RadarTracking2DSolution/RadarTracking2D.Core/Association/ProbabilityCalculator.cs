@@ -6,7 +6,7 @@ public static class ProbabilityCalculator
 {
     public static double Evaluate(Hypothesis hypothesis, List<BlobStatistics> measurements, List<Track> tracks)
     {
-        double probability = 1.0;
+        double probability = 1.0; // start with full probability
 
         foreach (var kv in hypothesis.Assignments)
         {
@@ -15,13 +15,13 @@ public static class ProbabilityCalculator
 
             if (trackId == null)
             {
-                probability *= 0.1; // disturbance
+                probability *= 0.1; // measurement considered noise
                 continue;
             }
 
             if (measurementIndex < 0 || measurementIndex >= measurements.Count)
             {
-                probability *= 0.01;
+                probability *= 0.01; // out-of-bounds index
                 continue;
             }
 
@@ -30,14 +30,14 @@ public static class ProbabilityCalculator
 
             if (track == null)
             {
-                probability *= 0.01; // invalid / vanished track
+                probability *= 0.01; // track disappeared
                 continue;
             }
 
             double px = measurement.MeanX;
             double py = measurement.MeanY;
 
-            probability *= track.Distribution.Probability(px, py);
+            probability *= track.Distribution.Probability(px, py); // multiply by Gaussian probability
         }
 
         return probability;

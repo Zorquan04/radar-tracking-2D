@@ -2,11 +2,12 @@
 
 namespace RadarTracking2D.Core.Tracking;
 
+// node of MHT tree – basically wraps Hypothesis + children
 public class MhTreeNode : AssociationNode
 {
     public MhTreeNode(Hypothesis hypothesis) : base(hypothesis) { }
 
-    // we add a convenient recursive method to the leaves
+    // recursively return all leaves
     public IEnumerable<MhTreeNode> GetLeaves()
     {
         if (Children.Count == 0)
@@ -15,7 +16,6 @@ public class MhTreeNode : AssociationNode
         {
             foreach (var child in Children)
             {
-                // we project children onto MhTreeNode – all children in MhTree are of this type
                 if (child is MhTreeNode mhChild)
                 {
                     foreach (var leaf in mhChild.GetLeaves())
@@ -25,6 +25,5 @@ public class MhTreeNode : AssociationNode
         }
     }
 
-    // we add a convenient child addition by casting to MhTreeNode
     public void AddChild(MhTreeNode child) => base.AddChild(child);
 }

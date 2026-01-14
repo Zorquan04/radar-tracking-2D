@@ -3,6 +3,7 @@ using System.Windows.Media;
 
 namespace RadarTracking2D.WPF.Models;
 
+// TrackVisual stores WPF-related info for a core Track
 public class TrackVisual
 {
     public int Id { get; }
@@ -20,7 +21,7 @@ public class TrackVisual
 
     public TrackVisual(Track core)
     {
-        _coreTrack = core; // we store core Track
+        _coreTrack = core;
         Id = core.Id;
 
         if (!_idToColor.TryGetValue(Id, out Color color))
@@ -30,7 +31,7 @@ public class TrackVisual
         }
         Color = color;
 
-        AddPosition(); // core Track Story
+        AddPosition(); // add initial point
     }
 
     public void AddPosition()
@@ -43,9 +44,10 @@ public class TrackVisual
         StdDevX = _coreTrack.Distribution.StdDevX;
         StdDevY = _coreTrack.Distribution.StdDevY;
 
-        UpdateScaledHistory(1, 1);
+        UpdateScaledHistory(1, 1); // default scale
     }
 
+    // update history for display scaling
     public void UpdateScaledHistory(double scaleX, double scaleY)
     {
         History.Clear();

@@ -2,6 +2,7 @@
 
 namespace RadarTracking2D.Core.Tracking;
 
+// main tracker: MHT + motion model + Gaussian updates
 public class Tracker
 {
     private readonly Dictionary<int, Track> _tracks = new();
@@ -13,10 +14,9 @@ public class Tracker
         if (!measurements.Any()) return;
 
         _tree.Expand(measurements, _tracks.Values.ToList(), ref _nextTrackId);
-
         _tree.Prune(8);
 
-        // we take the best leaves
+        // pick best leaves
         var leaves = _tree.Root.GetLeaves().OrderByDescending(l => l.Probability).Take(5).ToList();
 
         foreach (var leaf in leaves)
@@ -33,12 +33,14 @@ public class Tracker
 
                 if (!_tracks.TryGetValue(trackId.Value, out var track))
                 {
+                    // new track
                     track = new Track(trackId.Value,
                         new GaussianDistribution(meas.MeanX, meas.MeanY, meas.StdDevX, meas.StdDevY));
                     _tracks[trackId.Value] = track;
                 }
                 else
                 {
+                    // update existing track
                     track.Update(new GaussianDistribution(meas.MeanX, meas.MeanY, meas.StdDevX, meas.StdDevY));
                 }
             }

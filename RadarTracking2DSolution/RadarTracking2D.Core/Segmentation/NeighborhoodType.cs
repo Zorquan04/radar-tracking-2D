@@ -2,6 +2,6 @@
 
 public enum NeighborhoodType
 {
-    Four,
-    Eight
+    Four,   // 4-connected
+    Eight   // 8-connected
 }

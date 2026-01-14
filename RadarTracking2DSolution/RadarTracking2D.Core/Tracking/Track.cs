@@ -7,7 +7,7 @@ public class Track
     public int Id { get; }
     public GaussianDistribution Distribution { get; set; }
     public Point? PreviousPosition { get; private set; }
-    public int Age { get; private set; } = 0;
+    public int Age { get; private set; } = 1;
     public MotionModel Motion { get; } = new MotionModel();
 
     public Track(int id, GaussianDistribution distribution)
@@ -16,6 +16,7 @@ public class Track
         Distribution = distribution;
     }
 
+    // update track with new measurement
     public void Update(GaussianDistribution newDistribution)
     {
         if (Distribution != null)
@@ -23,11 +24,11 @@ public class Track
             PreviousPosition = new Point((int)Distribution.MeanX, (int)Distribution.MeanY);
             Motion.Update(newDistribution.MeanX, newDistribution.MeanY, Distribution.MeanX, Distribution.MeanY);
         }
-
         Distribution = newDistribution;
         Age++;
     }
 
+    // predict next position
     public (double PredX, double PredY) Predict()
     {
         return Motion.Predict(Distribution.MeanX, Distribution.MeanY);

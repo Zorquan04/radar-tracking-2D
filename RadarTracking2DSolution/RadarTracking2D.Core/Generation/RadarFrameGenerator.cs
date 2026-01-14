@@ -7,25 +7,18 @@ public class RadarFrameGenerator
     private readonly NoiseGenerator _noiseGenerator = new();
     private readonly ObjectGenerator _objectGenerator = new();
 
-    public RadarFrame Generate(
-        int width,
-        int height,
-        int objectCount)
+    public RadarFrame Generate(int width, int height, int objectCount)
     {
         var frame = new RadarFrame(width, height);
 
-        // Noise
+        // fill frame with noise
         for (int y = 0; y < height; y++)
-        {
             for (int x = 0; x < width; x++)
-            {
                 frame.SetPixel(x, y, _noiseGenerator.GenerateNoise());
-            }
-        }
 
-        // Objects
         var rand = new Random();
 
+        // add some bright objects
         for (int i = 0; i < objectCount; i++)
         {
             int cx = rand.Next(20, width - 20);

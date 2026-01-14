@@ -7,7 +7,7 @@ public class GaussianDistribution(double meanX, double meanY, double stdDevX, do
     public double StdDevX { get; } = stdDevX;
     public double StdDevY { get; } = stdDevY;
 
-    // 2D probability density function (Gaussian)
+    // 2D Gaussian PDF – probability at (x,y)
     public double Probability(double x, double y)
     {
         double coeff = 1.0 / (2.0 * Math.PI * StdDevX * StdDevY);

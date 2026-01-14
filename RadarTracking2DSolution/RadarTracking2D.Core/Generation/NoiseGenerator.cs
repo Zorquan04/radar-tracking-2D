@@ -6,6 +6,6 @@ public class NoiseGenerator(int? seed = null)
 
     public byte GenerateNoise(byte min = 0, byte max = 40)
     {
-        return (byte)_random.Next(min, max + 1);
+        return (byte)_random.Next(min, max + 1); // random noise value in range
     }
 }
