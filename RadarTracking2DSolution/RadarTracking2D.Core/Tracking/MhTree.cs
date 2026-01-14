@@ -19,7 +19,7 @@ public class MhTree
             {
                 var measurement = measurements[mIndex];
 
-                // no tracks yet → create new
+                // no tracks yet -> create new
                 if (!tracks.Any())
                 {
                     var hyp = leaf.Hypothesis.Clone();
@@ -34,23 +34,31 @@ public class MhTree
                     var hyp = leaf.Hypothesis.Clone();
                     hyp.Assignments[mIndex] = track.Id;
                     double prob = ProbabilityCalculator.Evaluate(hyp, measurements, tracks);
+
+                    // Boost slightly, but not too much
+                    prob = Math.Max(prob, 0.1); // minimum probability for track assignment
+                    if (leaf.Hypothesis.Assignments.ContainsValue(track.Id))
+                        prob *= 1.5; // history gives a small bonus
+
                     leaf.AddChild(new MhTreeNode(hyp) { Probability = prob });
                 }
 
                 // measurement is noise
                 var unassigned = leaf.Hypothesis.Clone();
                 unassigned.Assignments[mIndex] = null;
+                double noiseProb = ProbabilityCalculator.Evaluate(unassigned, measurements, tracks);
+                noiseProb = Math.Max(noiseProb, 0.05);
                 leaf.AddChild(new MhTreeNode(unassigned)
                 {
-                    Probability = ProbabilityCalculator.Evaluate(unassigned, measurements, tracks)
+                    Probability = noiseProb
                 });
 
-                // create new track hypothesis (low priority)
+                // create new track hypothesis
                 var newTrackHyp = leaf.Hypothesis.Clone();
                 newTrackHyp.Assignments[mIndex] = nextTrackId++;
                 leaf.AddChild(new MhTreeNode(newTrackHyp)
                 {
-                    Probability = 0.05
+                    Probability = 0.2
                 });
             }
         }

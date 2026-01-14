@@ -7,7 +7,8 @@ public class Track
     public int Id { get; }
     public GaussianDistribution Distribution { get; set; }
     public Point? PreviousPosition { get; private set; }
-    public int Age { get; private set; } = 1;
+    public int Age { get; set; } = 0;
+    public bool UpdatedThisFrame { get; set; } = false;
     public MotionModel Motion { get; } = new MotionModel();
 
     public Track(int id, GaussianDistribution distribution)
@@ -24,6 +25,11 @@ public class Track
             PreviousPosition = new Point((int)Distribution.MeanX, (int)Distribution.MeanY);
             Motion.Update(newDistribution.MeanX, newDistribution.MeanY, Distribution.MeanX, Distribution.MeanY);
         }
+        else
+        {
+            Motion.Update(newDistribution.MeanX, newDistribution.MeanY, newDistribution.MeanX - 1, newDistribution.MeanY - 1);
+        }
+
         Distribution = newDistribution;
         Age++;
     }

@@ -44,6 +44,10 @@ The project implements the following functionalities:
 - Visualization of position, standard deviation (ellipse), and predicted trajectories.
 - Object movement history and color-coding of each track.
 
+## Visual Presentation
+
+![image](/task/image.png)
+
 ## Challenges and Limitations
 
 - The MHT algorithm can saturate with a large number of objects and measurements.

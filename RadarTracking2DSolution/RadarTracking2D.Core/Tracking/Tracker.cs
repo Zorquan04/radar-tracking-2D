@@ -11,8 +11,12 @@ public class Tracker
 
     public void ProcessFrame(List<BlobStatistics> measurements)
     {
-        if (!measurements.Any()) return;
-
+        if (!measurements.Any())
+        {
+            Console.WriteLine("No measurements -> frame skipped");
+            return;
+        }
+        
         _tree.Expand(measurements, _tracks.Values.ToList(), ref _nextTrackId);
         _tree.Prune(8);
 
@@ -41,6 +45,8 @@ public class Tracker
                 else
                 {
                     // update existing track
+                    var oldX = track.Distribution.MeanX;
+                    var oldY = track.Distribution.MeanY;
                     track.Update(new GaussianDistribution(meas.MeanX, meas.MeanY, meas.StdDevX, meas.StdDevY));
                 }
             }

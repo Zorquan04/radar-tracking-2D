@@ -20,19 +20,12 @@ public partial class MainWindow : Window
     private readonly ThresholdingService _thresholding = new();
     private readonly BlobExtractor _extractor = new();
     private readonly Tracker _tracker = new();
-
-    private readonly List<RadarFrame> _frames = new();
-    private int _currentFrame = 0;
     private readonly DispatcherTimer _timer = new();
 
     public MainWindow()
     {
         InitializeComponent();
         DataContext = _viewModel;
-
-        // create some test radar frames
-        for (int i = 0; i < 10; i++)
-            _frames.Add(_generator.Generate(100, 100, 3));
 
         // start timer to update frames
         _timer.Interval = TimeSpan.FromMilliseconds(500);
@@ -42,14 +35,10 @@ public partial class MainWindow : Window
 
     private void Timer_Tick(object? sender, EventArgs e)
     {
-        if (_currentFrame >= _frames.Count)
-        {
-            _timer.Stop(); // stop when out of frames
-            return;
-        }
+        // we generate a new frame on the fly
+        var frame = _generator.Generate(100, 100, 3);
 
-        ProcessRadarFrame(_frames[_currentFrame]); // main processing
-        _currentFrame++;
+        ProcessRadarFrame(frame); // main processing
     }
 
     private void ProcessRadarFrame(RadarFrame frame)
@@ -63,6 +52,14 @@ public partial class MainWindow : Window
 
         // 3. Tracking: update tracks with new measurements
         _tracker.ProcessFrame(blobs);
+
+        foreach (var t in _tracker.GetTracks())
+        {
+            if (t.UpdatedThisFrame)
+                t.Age = 0;       // track active in this frame
+            else
+                t.Age += 1;      // track out of date -> getting old
+        }
 
         // 4. Update ViewModel for visualization
         _viewModel.UpdateTracks(_tracker.GetTracks());
@@ -82,28 +79,31 @@ public partial class MainWindow : Window
             t.AddPosition();
             t.UpdateScaledHistory(scaleX, scaleY);
 
-            // draw Gaussian ellipse
-            var ellipse = new Ellipse
+            if (t.GetCoreTrack().Age <= 2)
             {
-                Width = t.StdDevX * 4 * scaleX,
-                Height = t.StdDevY * 4 * scaleY,
-                Fill = new SolidColorBrush(Color.FromArgb(60, t.Color.R, t.Color.G, t.Color.B))
-            };
-            Canvas.SetLeft(ellipse, t.Position.X - ellipse.Width / 2);
-            Canvas.SetTop(ellipse, t.Position.Y - ellipse.Height / 2);
-            RadarCanvas.Children.Add(ellipse);
+                // draw Gaussian ellipse
+                var ellipse = new Ellipse
+                {
+                    Width = t.StdDevX * 4 * scaleX,
+                    Height = t.StdDevY * 4 * scaleY,
+                    Fill = new SolidColorBrush(Color.FromArgb(60, t.Color.R, t.Color.G, t.Color.B))
+                };
+                Canvas.SetLeft(ellipse, t.Position.X - ellipse.Width / 2);
+                Canvas.SetTop(ellipse, t.Position.Y - ellipse.Height / 2);
+                RadarCanvas.Children.Add(ellipse);
 
-            // draw main point
-            var dot = new Ellipse
-            {
-                Width = 6,
-                Height = 6,
-                Fill = new SolidColorBrush(t.Color)
-            };
-            Canvas.SetLeft(dot, t.Position.X - 3);
-            Canvas.SetTop(dot, t.Position.Y - 3);
-            RadarCanvas.Children.Add(dot);
-
+                // draw main point
+                var dot = new Ellipse
+                {
+                    Width = 6,
+                    Height = 6,
+                    Fill = new SolidColorBrush(t.Color)
+                };
+                Canvas.SetLeft(dot, t.Position.X - 3);
+                Canvas.SetTop(dot, t.Position.Y - 3);
+                RadarCanvas.Children.Add(dot);
+            }
+            
             // draw track history lines
             for (int i = 1; i < t.History.Count; i++)
             {

@@ -4,9 +4,12 @@ namespace RadarTracking2D.Core.Tracking.Association;
 
 public static class ProbabilityCalculator
 {
+    private const double MinProb = 0.1; // minimum probability of track
+    private const double NoiseProb = 0.1;
+
     public static double Evaluate(Hypothesis hypothesis, List<BlobStatistics> measurements, List<Track> tracks)
     {
-        double probability = 1.0; // start with full probability
+        double probability = 1.0;
 
         foreach (var kv in hypothesis.Assignments)
         {
@@ -15,13 +18,13 @@ public static class ProbabilityCalculator
 
             if (trackId == null)
             {
-                probability *= 0.1; // measurement considered noise
+                probability *= NoiseProb;
                 continue;
             }
 
             if (measurementIndex < 0 || measurementIndex >= measurements.Count)
             {
-                probability *= 0.01; // out-of-bounds index
+                probability *= MinProb; // out-of-bounds
                 continue;
             }
 
@@ -30,14 +33,20 @@ public static class ProbabilityCalculator
 
             if (track == null)
             {
-                probability *= 0.01; // track disappeared
+                probability *= MinProb; // the track disappeared
                 continue;
             }
 
             double px = measurement.MeanX;
             double py = measurement.MeanY;
 
-            probability *= track.Distribution.Probability(px, py); // multiply by Gaussian probability
+            // Gaussian probability for track
+            double prob = track.Distribution.Probability(px, py);
+
+            // gate minimum probability
+            prob = Math.Max(prob, MinProb);
+
+            probability *= prob;
         }
 
         return probability;
