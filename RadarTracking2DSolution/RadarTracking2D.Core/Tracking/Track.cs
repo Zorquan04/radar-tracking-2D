@@ -2,20 +2,15 @@
 using RadarTracking2D.Core.Tracking;
 using System.Drawing;
 
-public class Track
+public class Track(int id, GaussianDistribution distribution)
 {
-    public int Id { get; }
-    public GaussianDistribution Distribution { get; set; }
+    public int Id { get; } = id;
+    public GaussianDistribution Distribution { get; set; } = distribution;
     public Point? PreviousPosition { get; private set; }
     public int Age { get; set; } = 0;
     public bool UpdatedThisFrame { get; set; } = false;
+    public bool IsManual { get; set; } = false;
     public MotionModel Motion { get; } = new MotionModel();
-
-    public Track(int id, GaussianDistribution distribution)
-    {
-        Id = id;
-        Distribution = distribution;
-    }
 
     // update track with new measurement
     public void Update(GaussianDistribution newDistribution)
@@ -32,11 +27,5 @@ public class Track
 
         Distribution = newDistribution;
         Age++;
-    }
-
-    // predict next position
-    public (double PredX, double PredY) Predict()
-    {
-        return Motion.Predict(Distribution.MeanX, Distribution.MeanY);
     }
 }

@@ -12,12 +12,12 @@ The project implements the following functionalities:
 - **Image thresholding using the Otsu method:** automatic thresholding for object segmentation.
 - **Blob extraction:** Connected Component Labeling (CCL) algorithm groups pixels belonging to the same object.
 - **Blob statistics:** calculation of mean coordinates and standard deviations of pixels within blobs, modeling positions as a normal distribution.
-- **Probabilistic Association Tree:** A data structure for managing various assignment scenarios.
-- **Interactive Visualization:** Track objects on a WPF canvas with historical trajectories, position prediction, and deviation visualization.
+- **Interactive Visualization:** Track objects on a WPF canvas with color-coded tracks and ellipses representing positional uncertainty.
+- **Manual track addition:** users can click on the canvas to create new tracked objects.
 
 ## Technologies
 
-- **C# / .NET 9**
+- **C# / .NET 9.0**
 - **WPF** – interactive 2D visualization
 - **NUnit** – unit testing
 - Data structures and algorithms: Connected Component Labeling, Gaussian Distribution, Motion Model
@@ -37,12 +37,14 @@ The project implements the following functionalities:
 1. Open the project in Visual Studio 2022 (or later).
 2. Launch the WPF project to see an interactive simulation.
 3. To verify the algorithms' performance, run NUnit tests in the `Tests` project.
+4. You can also run ready to go exe file in publish folder ([see](publish))
 
 ## Demo Features
 
 - Dynamic object generation and tracking in real time.
-- Visualization of position, standard deviation (ellipse), and predicted trajectories.
-- Object movement history and color-coding of each track.
+- Visualization of position and standard deviation (ellipses).
+- Manual addition of tracked objects by clicking on the canvas.
+- Color-coding of each track.
 
 ## Visual Presentation
 
@@ -50,5 +52,5 @@ The project implements the following functionalities:
 
 ## Challenges and Limitations
 
-- The MHT algorithm can saturate with a large number of objects and measurements.
 - The simulation is limited to a 2D model; in real radar systems, additional dimensions and motion models are considered.
+- The probabilistic association tree can become heavy with a large number of objects and measurements.

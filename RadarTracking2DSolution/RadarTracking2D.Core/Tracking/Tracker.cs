@@ -6,8 +6,15 @@ namespace RadarTracking2D.Core.Tracking;
 public class Tracker
 {
     private readonly Dictionary<int, Track> _tracks = new();
+    private readonly List<Track> _manualTracks = new();
     private readonly MhTree _tree = new MhTree();
     private int _nextTrackId = 1;
+    public int GetNextId() => _nextTrackId++;
+
+    public void AddManualTrack(Track track)
+    {
+        _manualTracks.Add(track);
+    }
 
     public void ProcessFrame(List<BlobStatistics> measurements)
     {
@@ -38,8 +45,7 @@ public class Tracker
                 if (!_tracks.TryGetValue(trackId.Value, out var track))
                 {
                     // new track
-                    track = new Track(trackId.Value,
-                        new GaussianDistribution(meas.MeanX, meas.MeanY, meas.StdDevX, meas.StdDevY));
+                    track = new Track(trackId.Value, new GaussianDistribution(meas.MeanX, meas.MeanY, meas.StdDevX, meas.StdDevY));
                     _tracks[trackId.Value] = track;
                 }
                 else
@@ -51,7 +57,15 @@ public class Tracker
                 }
             }
         }
+
+        foreach (var t in _tracks.Values.Concat(_manualTracks))
+        {
+            if (t.UpdatedThisFrame)
+                t.Age = 0;
+            else
+                t.Age += 1;
+        }
     }
 
-    public List<Track> GetTracks() => _tracks.Values.ToList();
+    public List<Track> GetTracks() => _tracks.Values.Concat(_manualTracks).ToList();
 }

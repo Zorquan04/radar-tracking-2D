@@ -2,6 +2,7 @@
 using RadarTracking2D.Core.Data;
 using RadarTracking2D.Core.Generation;
 using RadarTracking2D.Core.Segmentation;
+using RadarTracking2D.Core.Statistics;
 using RadarTracking2D.Core.Tracking;
 using RadarTracking2D.WPF.Models;
 using RadarTracking2D.WPF.ViewModels;
@@ -21,6 +22,7 @@ public partial class MainWindow : Window
     private readonly BlobExtractor _extractor = new();
     private readonly Tracker _tracker = new();
     private readonly DispatcherTimer _timer = new();
+    private readonly List<Point> _clickPoints = new();
 
     public MainWindow()
     {
@@ -31,6 +33,9 @@ public partial class MainWindow : Window
         _timer.Interval = TimeSpan.FromMilliseconds(500);
         _timer.Tick += Timer_Tick;
         _timer.Start();
+
+        // handle mouse clicks on canvas
+        RadarCanvas.MouseLeftButtonDown += RadarCanvas_MouseLeftButtonDown;
     }
 
     private void Timer_Tick(object? sender, EventArgs e)
@@ -53,6 +58,21 @@ public partial class MainWindow : Window
         // 3. Tracking: update tracks with new measurements
         _tracker.ProcessFrame(blobs);
 
+        // 3.2 Tracking: add manual tracks from clicks
+        foreach (var p in _clickPoints)
+        {
+            var gaussian = new GaussianDistribution(p.X, p.Y, 2, 2); // small deviation
+            var newTrack = new Track(_tracker.GetNextId(), gaussian) { IsManual = true };
+
+            // we add a manual track with the starting point of the story
+            var manualVisual = new TrackVisual(newTrack, p);
+            _viewModel.Tracks.Add(manualVisual);
+
+            _tracker.AddManualTrack(newTrack);
+        }
+        _clickPoints.Clear();
+
+        // 4. Age update
         foreach (var t in _tracker.GetTracks())
         {
             if (t.UpdatedThisFrame)
@@ -61,10 +81,10 @@ public partial class MainWindow : Window
                 t.Age += 1;      // track out of date -> getting old
         }
 
-        // 4. Update ViewModel for visualization
+        // 5. Update ViewModel for visualization
         _viewModel.UpdateTracks(_tracker.GetTracks());
 
-        // 5. Draw on canvas
+        // 6. Draw on canvas
         DrawTracks(_viewModel.Tracks);
     }
 
@@ -76,7 +96,6 @@ public partial class MainWindow : Window
 
         foreach (var t in tracks)
         {
-            t.AddPosition();
             t.UpdateScaledHistory(scaleX, scaleY);
 
             if (t.GetCoreTrack().Age <= 2)
@@ -103,11 +122,11 @@ public partial class MainWindow : Window
                 Canvas.SetTop(dot, t.Position.Y - 3);
                 RadarCanvas.Children.Add(dot);
             }
-            
-            // draw track history lines
+
+            // history lines
             for (int i = 1; i < t.History.Count; i++)
             {
-                var line = new Line
+                RadarCanvas.Children.Add(new Line
                 {
                     X1 = t.History[i - 1].X,
                     Y1 = t.History[i - 1].Y,
@@ -115,23 +134,25 @@ public partial class MainWindow : Window
                     Y2 = t.History[i].Y,
                     Stroke = new SolidColorBrush(t.Color),
                     StrokeThickness = 1
-                };
-                RadarCanvas.Children.Add(line);
+                });
             }
-
-            // draw predicted motion (dashed)
-            var pred = t.GetCoreTrack().Predict();
-            var predLine = new Line
-            {
-                X1 = t.Position.X,
-                Y1 = t.Position.Y,
-                X2 = pred.PredX * scaleX,
-                Y2 = pred.PredY * scaleY,
-                Stroke = new SolidColorBrush(t.Color) { Opacity = 0.3 },
-                StrokeThickness = 1,
-                StrokeDashArray = new DoubleCollection { 4, 2 }
-            };
-            RadarCanvas.Children.Add(predLine);
         }
+    }
+
+    // Mouse click support on Canvas
+    private void RadarCanvas_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        // we get the click position in the Canvas coordinates
+        var pos = e.GetPosition(RadarCanvas);
+
+        // we convert it to the "radar" coordinates (0..100)
+        double x = pos.X / RadarCanvas.ActualWidth * 100;
+        double y = pos.Y / RadarCanvas.ActualHeight * 100;
+
+        var manualTrack = new Track(_tracker.GetNextId(), new GaussianDistribution(x, y, 2, 2))
+        {
+            IsManual = true
+        };
+        _tracker.AddManualTrack(manualTrack);
     }
 }

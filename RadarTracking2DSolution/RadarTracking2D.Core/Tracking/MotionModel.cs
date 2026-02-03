@@ -6,12 +6,6 @@ public class MotionModel(double velX = 0, double velY = 0)
     public double VelX { get; private set; } = velX;
     public double VelY { get; private set; } = velY;
 
-    // predict next position
-    public (double PredX, double PredY) Predict(double currentX, double currentY)
-    {
-        return (currentX + VelX, currentY + VelY);
-    }
-
     // update velocity based on movement
     public void Update(double newX, double newY, double oldX, double oldY)
     {

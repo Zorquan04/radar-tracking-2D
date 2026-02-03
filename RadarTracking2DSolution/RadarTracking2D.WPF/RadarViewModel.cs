@@ -12,17 +12,19 @@ public class RadarViewModel : INotifyPropertyChanged
     // sync core Tracks with visuals
     public void UpdateTracks(IEnumerable<Track> coreTracks)
     {
-        foreach (var core in coreTracks)
-        {
+        foreach(var core in coreTracks)
+    {
             var visual = Tracks.FirstOrDefault(t => t.Id == core.Id);
 
             if (visual == null)
             {
-                Tracks.Add(new TrackVisual(core)); // add new visual if it doesn't exist
+                visual = new TrackVisual(core); // add new visual if it doesn't exist
+                Tracks.Add(visual);
             }
             else
             {
-                visual.AddPosition(); // append new position to history
+                if (!visual.GetCoreTrack().IsManual)
+                    visual.AddPosition();
             }
         }
 
